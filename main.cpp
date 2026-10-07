@@ -19,9 +19,9 @@
 //Ontario Tech University
 //Started: September 20th, 2026
 
-//Reminder add colour for the board and the chess piece.
 //2D array and in each value, that never change. Character array, Direction (like B3, C4), Add possible position.
-//CPU: Unlock patters
+//CPU: Unlock patterns
+//Let it to show a countdown going down using \r.
 int main() {
     Chess chess;
     int numberOfPlayers = 2;
@@ -40,7 +40,7 @@ int main() {
         players.push_back(player);
     }
 
-    //Reference from Gemini
+    //Reference from Gemini for the p1 and p2.
     int p1 = 1;
     for (int i = 0; i < 8; i++) { Pawn* p = new Pawn(); players[0].addChess_Piece(p); chess.placeChess_Piece(p, p1); }
     for (int i = 0; i < 2; i++) { Rook* r = new Rook(); players[0].addChess_Piece(r); chess.placeChess_Piece(r, p1); }
@@ -59,6 +59,7 @@ int main() {
 
     int choice;
     bool restarting;
+    bool restarting_game = false;
     bool to_case = false;
     bool isTimer = false;
 
@@ -89,13 +90,16 @@ int main() {
         if (to_case){
             choice = 4;
             to_case = false;
+        } else if (restarting_game){
+            choice = 1;
+            restarting_game = false;
         } else {
             choice = 0;
             cin >> choice;
         }
 
         switch (choice){
-            case 1:{
+            case 1: {
                 // Main game loop
                 int turnCount = 0;
                 char userChoice = 'n'; // Default choice to start the game
@@ -115,11 +119,10 @@ int main() {
 
                         chess.displayMap(dynamicWhite, dynamicBlack);
                         std::cout << "\n--- Player " << playerNumber << "'s Turn ---\n";
-                        
-                        int leftoverTime = chess.timePlayer(currentPool, playerNumber, isTimer);
+                        int leftoverTime = currentPool;
 
                         if (isTimer) {
-                            std::cout << "Time Remaining:" <<leftoverTime << std::endl;
+                            std::cout << "Time Remaining: " << leftoverTime << "'s\n";
                         }
 
                         currentPlayer.printStatus();
@@ -182,7 +185,7 @@ int main() {
                         if (selection >= 0 && selection < static_cast<int>(playerChess_Piece.size())) {
                             std::string symbol = playerChess_Piece[selection]->getSymbol();
 
-                            //Reference by Gemini
+                            //Reference by Gemini for steps
                             int steps;
                             if (symbol == "R" || symbol == "Q" || symbol == "B"){
                                 std::cout << "How Many Steps: ";
@@ -206,7 +209,6 @@ int main() {
 
                         auto endtime = std::chrono::steady_clock::now();
                         int secondsTaken = std::chrono::duration_cast<std::chrono::seconds>(endtime - starttime).count();
-                        leftoverTime = currentPool - secondsTaken;
 
                         bool gameOver = false;
                         while (!gameOver){
@@ -227,41 +229,60 @@ int main() {
                                     // Ask the user if they want to continue or quit the game
                                     std::cout << "Do you want to quit the game? (y/n): ";
                                     std::cin >> userChoice;
-                                    if(userChoice == 'y' || userChoice == 'Y') {
-                                        break; // Exit the game loop
+                                    if (userChoice == 'y' || userChoice == 'Y'){
+                                        restarting_game = true;
+                                        gameOver = true;
+                                        break;
+                                    } else {
+                                        restarting = true;
+                                        restarting_game = false;
+                                        gameOver = true;
+                                        break;
                                     }
                                 } else {
                                     if (isTimer) {
                                         int currentPool = (playerNumber == 1) ? player1Clock : player2Clock;
-                                        leftoverTime = chess.timePlayer(playerNumber, currentPool, isTimer);
+
+                                        leftoverTime = currentPool - secondsTaken;
+                                        
+                                        if (leftoverTime <= 0 && secondsTaken > time) {
+                                            secondsTaken = 1;
+                                            leftoverTime = currentPool - secondsTaken;
+                                            if (playerNumber == 1) player1Clock = leftoverTime;
+                                            else player2Clock = leftoverTime;
+                                        }
 
                                         if (leftoverTime <= 0) {
                                             int winningPlayerNumber = (playerNumber == 1) ? 2 : 1;
                                             std::cout << "\n========================================\n";
-                                            std::cout << "Player " << playerNumber << " ran out of time!\n";
-                                            std::cout << "Player " << winningPlayerNumber << " Wins!\n";
+                                            std::cout << "PLAYER " << winningPlayerNumber << " Wins!\n";
                                             std::cout << "========================================\n";
-                                            
-                                            userChoice = 'y';
-                                            gameOver = true;
-                                            break;
+                                            std::cout << "Do You Want to Restart (y/n): ";
+                                            std::cin >> userChoice;
+                                            if (userChoice == 'y' || userChoice == 'Y'){
+                                                restarting_game = true;
+                                                gameOver = true;
+                                                break;
+                                            } else {
+                                                restarting = true;
+                                                restarting_game = false;
+                                                gameOver = true;
+                                                break;
+                                            }
                                         } else {
                                             if (playerNumber == 1) player1Clock = leftoverTime;
                                             else player2Clock = leftoverTime;
+                                            gameOver = true;
                                         }
+                                    } else {
+                                        gameOver = true;
                                     }
-
-                                    gameOver = true;
-                                    break;
                                 }
                             }
                         }
                     }
                 }
-                restarting = true;
-                break;
-            }
-            case 2: {//Descripition for the chess piece
+            } case 2: {//Descripition for the chess piece
                 int x;
                 std::string exit_choice;
                 std::cout << "==================Chess Piece========================\n";
@@ -272,7 +293,7 @@ int main() {
                 std::cout << "Rook: Can only go forward, backwards, right and left. It also do a special move with King (Which your going find out)\n";
                 std::cout << "Queen: The most powerful unit on the board. It has the Rook and Bishop own move set. Be wise of how to use it.\n";
                 std::cout << "King: The king is the most important unit you need protect. It can move like the Queen but can only move one squre per turn.\n";
-                std::cout << "Other Units will be added soon...\n";
+                std::cout << "*Other Units will be added soon...\n";
                 std::cout << "=====================================================\n";
                 std::cout << "Exit press 0.\n";
                 std::cin >> x;
@@ -285,8 +306,7 @@ int main() {
                     }
                 }
                 break;
-            }
-            case 3:{//Instruction
+            } case 3: {//Instruction
                 int x;
                 std::string exit_choice;
                 std::cout << "===============Instruction===============\n";
@@ -297,6 +317,8 @@ int main() {
                 std::cout << "4. You have to enter a Number of which chest piece you want to move. If it is higher than 15 or other than a number, then you get an error and it will be given to next player (Please cautionous).\n";
                 std::cout << "5. It will also show the status of each player of how many chess piece you have left and many other more that your going to find out.\n";
                 std::cout << "6. one lasting, HAVE FUN or just be serious about the game.\n";
+                std::cout << "7. Both players have a timer, when player has it turn, it will run down the clock, if there timer goes down to zero the player automatically loses.\n";
+                std::cout << "*Recommed Check the Option, You can change the time (since there is no timer as default) and another option that you might like.\n";
                 std::cout << "=========================================\n";
                 std::cout << "Exit press 0.\n";
                 std::cin >> x;
@@ -309,16 +331,16 @@ int main() {
                     }
                 }
                 break;
-            }
-            case 4: {
+            } case 4: {
                 int option;
                 std::string decision;
                 std::string exit_choice;
-                std::cout << "---------Option---------\n";
-                std::cout << "Colors (1)\n";
-                std::cout << "Timer (2)\n";
+                std::cout << "\n---------Option---------\n";
+                std::cout << "Colors (1):\n";
+                std::cout << "Timer (2):\n";
                 std::cout << "-------------------------\n";
                 std::cout << "Exit press 0.\n";
+                std::cout << "Enter Your Choice: ";
                 std::cin >> option;
                 if (option == 0){
                     std::cout << "You want to exit (y/n):\n";
@@ -374,52 +396,85 @@ int main() {
                             time = 180;
                             std::cout << "Changing Time for the match.\n\n";
                             to_case = true;
-                        } else if (time_control == 2) {
-                            std::cout << "Blitz: Which time, 5 minutes (1) or 10 minutes (2):\n";
-                            std::cin >> control;
-                            if (control == 1){
+                            isTimer = true;
+                        } 
+                    } else if (time_control == 2) {
+                        std::cout << "Blitz: Which time, 5 minutes (1) or 10 minutes (2):\n";
+                        std::cin >> control;
+                        if (control == 1){
+                            std::cout << "Do You Want To Pick This Time (y/n):\n";
+                            std::cin >> decision;
+                            if (decision == "y" || decision == "Y"){
                                 time = 300;
                                 std::cout << "Blitz Mode: Changing to 5 minutes\n\n";
                                 to_case = true;
-                            } else if (control == 2){
+                                isTimer = true;
+                            }
+                        } else if (control == 2){
+                             std::cout << "Do You Want To Pick This Time (y/n):\n";
+                            std::cin >> decision;
+                            if (decision == "y" || decision == "Y"){
                                 time = 600;
                                 std::cout << "Blitz Mode: Changing to 10 minutes\n\n";
                                 to_case = true;
+                                isTimer = true;
                             }
-                        } else if (time_control == 3){
-                            std::cout << "Rapid: Which time, 15 minutes (1) or 60 minutes (2):\n";
-                            std::cin >> control;
-                            if (control  == 1){
+                        }
+                    } else if (time_control == 3){
+                        std::cout << "Rapid: Which time, 15 minutes (1) or 60 minutes (2):\n";
+                        std::cin >> control;
+                        if (control  == 1){
+                             std::cout << "Do You Want To Pick This Time (y/n):\n";
+                            std::cin >> decision;
+                            if (decision == "y" || decision == "Y"){
                                 time = 900;
                                 std::cout << "Rapid Mode: Changing to 15 mintues\n\n";
                                 to_case = true;
-                            } else if (control == 2) {
+                                isTimer = true;
+                            }
+                        } else if (control == 2) {
+                             std::cout << "Do You Want To Pick This Time (y/n):\n";
+                            std::cin >> decision;
+                            if (decision == "y" || decision == "Y"){
                                 time = 3600;
                                 std::cout << "Rapid Mode: Changing to 60 minutes\n\n";
                                 to_case = true;
+                                isTimer = true;
                             }
-                        } else if (time_control == 4) {
-                            std::cout << "Classical: Which time, 2 hours (1) or 6+ hours(2):\n";
-                            std::cin >> control;
-                            if (control == 1){
+                        }
+                    } else if (time_control == 4) {
+                        std::cout << "Classical: Which time, 2 hours (1) or 6+ hours(2):\n";
+                        std::cin >> control;
+                        if (control == 1){
+                            std::cout << "Do You Want To Pick This Time (y/n):\n";
+                            std::cin >> decision;
+                            if (decision == "y" || decision == "Y"){
                                 time = 7200;
                                 std::cout << "Classical Mode: Changing to 2 hours\n\n";
                                 to_case = true;
-                            } else if (control == 3){
-                                std::cout << "Since You pick this, how many hours?\n";
-                                std::cout << "Needs to be in seconds.\n";
-                                std::cin >> time;
+                                isTimer = true;
+                            }
+                        } else if (control == 3){
+                            std::cout << "Since You pick this, how many hours?\n";
+                            std::cout << "Needs to be in seconds.\n";
+                            std::cin >> time;
+                            std::cout << "Do You Want To Pick This Time (y/n):\n";
+                            std::cin >> decision;
+                            if (decision == "y" || decision == "Y"){
                                 int hours = time / 3600;
                                 std::cout << "Classical Mode: Changing to " << hours << "hours\n\n";
                                 to_case = true;
+                                isTimer = true;
                             }
-                        } else if (time == 5) {
-                            time = 0;
-                            std::cout << "Default Mode: Deactivating timer.\n\n";
-                            to_case = true;
                         }
+                    } else if (time == 5) {
+                        time = 0;
+                        std::cout << "Default Mode: Deactivating timer.\n\n";
+                        to_case = true;
+                        isTimer = false;
                     }
                 } 
+                    //For CPU Option.
                     //else if (option == 3){
                     //} 
                 else {
@@ -433,16 +488,12 @@ int main() {
                 }
                 restarting = true;
                 break;
-            }
-
-            case 5: {
+            } case 5: {
                 cout << "Exiting, Have A Great Day!!!\n";
                 break;
-            }
-
-            default:
+            } default:
                 try{
-                    if (choice != 1 || choice != 2 || choice != 3){
+                    if (choice != 1 || choice != 2 || choice != 3 ||choice != 4 || choice != 5){
                         throw std::runtime_error("Execption: Wrong Number of picking an option.");
                     }
                 } catch(const runtime_error& e) {

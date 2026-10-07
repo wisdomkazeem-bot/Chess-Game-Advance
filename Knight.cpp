@@ -10,10 +10,10 @@ void Knight::action(int player_number, Chess& chess){
     cout << "\n ---- Player " << player_number << "'s Turn (Knight)\n";
     cout << "Move(NNE, NNW, SSE, SSW, EEN, EES, WWN, WWS): ";
     string choice;
-    getline(cin, choice);
+    cin >> choice;
 
     if (choice == "nne" || choice == "NNE") choice = "NNE";
-    else if (choice == "nnw" || choice == "NNW") choice == "NNW";
+    else if (choice == "nnw" || choice == "NNW") choice = "NNW";
     else if (choice == "sse" || choice == "SSE") choice = "SSE";
     else if (choice == "ssw" || choice == "SSW") choice = "SSW";
     else if (choice == "een" || choice == "EEN") choice = "EEN";

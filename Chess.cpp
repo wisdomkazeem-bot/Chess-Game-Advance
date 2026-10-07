@@ -143,8 +143,8 @@ bool Chess::moveChess_Piece(Chess_Piece* chess_piece, const std::string& directi
     else if (direction == "E") newY += steps;
     else if (direction == "W") newY -= steps;
     else if (direction == "NE") {newX -= steps; newY += steps; isDiagonalMove = true;}
-    else if (direction == "SE") {newX += steps; newY += steps;}
-    else if (direction == "SW") {newX += steps; newY -= steps;}
+    else if (direction == "SE") {newX += steps; newY += steps; isDiagonalMove = true;}
+    else if (direction == "SW") {newX += steps; newY -= steps; isDiagonalMove = true;}
     else if (direction == "NW") {newX -= steps; newY -=steps; isDiagonalMove = true;} 
 
     //Knights own move sets (Reference from Gemini)
@@ -171,7 +171,7 @@ bool Chess::moveChess_Piece(Chess_Piece* chess_piece, const std::string& directi
         if (chess_piece->getSymbol() == "P" && isDiagonalMove) {
             if (target_piece == nullptr) {
                 std::cout << "Pawns can only move diagonally to attack an enemy!\n";
-                return true;
+                return false;
             }
         }
         
@@ -181,6 +181,20 @@ bool Chess::moveChess_Piece(Chess_Piece* chess_piece, const std::string& directi
                 return false; 
             } else {
                 clearChess_Piece(chess_piece, target_piece); 
+            }
+        }
+
+        //Reference from Gemini
+        if (chess_piece->getSymbol() != "S") {
+                int firstStepX = oldX + ((newX > oldX) ? 1 : ((newX < oldX) ? -1 : 0));
+                int firstStepY = oldY + ((newY > oldY) ? 1 : ((newY < oldY) ? -1 : 0));
+            for (const auto& pair : chess_piecePositions) {
+                if (pair.second.first.first == firstStepX && pair.second.first.second == firstStepY) {
+                    if (steps > 1) {
+                        std::cout << "Only Knights can jump over pieces! Path is blocked.\n";
+                        return false;
+                    }
+                }
             }
         }
 
@@ -276,8 +290,10 @@ bool Chess::isKingDefeated(const std::vector<Chess_Piece*>& activePieces) {
             std::string sym = activePieces[i]->getSymbol();
             // Checks for both uppercase "K" or lowercase "k" 
             if (sym == "K" || sym == "k") {
-                kingFound = true;
-                break;
+                if (chess_piecePositions.find(activePieces[i]) != chess_piecePositions.end()){
+                    kingFound = true;
+                    break;
+                }
             }
         }
     }
@@ -287,33 +303,22 @@ bool Chess::isKingDefeated(const std::vector<Chess_Piece*>& activePieces) {
 
 //Reference from Gemini
 bool Chess::checkWinCondition() {
-    int playerOne = 0;
-    int playerTwo = 0;
-    int totalPieces = 0;
+    int playerOneKings = 0;
+    int playerTwoKings = 0;
 
-    for (int x = 0; x < 8; ++x) {
-        for (int y = 0; y < 8; ++y) {
-            if (grid[x][y] != nullptr) {
-                std::string sym = ((Chess_Piece*)grid[x][y])->getSymbol();
-                
-                if (sym == "K") playerOne++;
-                if (sym == "k") playerTwo++;
-            }
+    for (const auto& pair : chess_piecePositions) {
+        Chess_Piece* piece = pair.first;
+        int owner = pair.second.second;
+        
+        if (piece != nullptr && (piece->getSymbol() == "K" || piece->getSymbol() == "k")) {
+            if (owner == 1) playerOneKings++;
+            if (owner == 2) playerTwoKings++;
         }
     }
 
-    if (playerOne == 0) {
-        std::cout << "CHECKMATE! Player 2 Wins!\n";
+    // Return true if either king is dead so your outer statement fires
+    if (playerOneKings == 0 || playerTwoKings == 0) {
         return true;
-    }
-    if (playerTwo == 0) {
-        std::cout << "CHECKMATE! Player 1 Wins!\n";
-        return true;
-    }
-
-    if (totalPieces < 20) { 
-        if (playerOne == 1) std::cout << "CHECK ALERT: White team is in danger!\n";
-        if (playerTwo == 1) std::cout << "CHECK ALERT: Black team is in danger!\n";
     }
     return false;
 }

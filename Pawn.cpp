@@ -23,9 +23,9 @@ void Pawn::action(int player_number, Chess& chess){
     if (choice == "n" || choice == "N") choice = "N";
     else if (choice == "s" || choice == "S") choice = "S";
     else if (choice == "ne" || choice == "NE" || choice == "EN" || choice == "en") choice = "NE";
-    else if (choice == "es" || choice == "ES" || choice == "se" || choice == "SE") choice = "ES";
+    else if (choice == "es" || choice == "ES" || choice == "se" || choice == "SE") choice = "SE";
     else if (choice == "sw" || choice == "SW" || choice == "ws" || choice == "WS") choice = "SW";
-    else if (choice == "wn" || choice == "WN" || choice == "NW" || choice == "nw") choice = "WN";
+    else if (choice == "wn" || choice == "WN" || choice == "NW" || choice == "nw") choice = "NW";
 
     bool move = chess.moveChess_Piece(this, choice, player_number);
     if (!move){
