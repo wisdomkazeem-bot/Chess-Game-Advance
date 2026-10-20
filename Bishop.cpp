@@ -9,18 +9,23 @@ void Bishop::action(int player_number, Chess& chess){
     chess.displayMapWithSight(player_number, getSR(), this);
 
     cout << "\n---- Player's " << player_number << "'s Turn (Bishop)----\n";
-    cout << "Move(NE, SE, SW, NW): ";
+    
     string choice;
-    getline(cin, choice);
-
-    if (choice == "ne" || choice == "NE" || choice == "EN" || choice == "en") choice = "NE";
-    else if (choice == "es" || choice == "ES" || choice == "se" || choice == "SE") choice = "SE";
-    else if (choice == "sw" || choice == "SW" || choice == "ws" || choice == "WS") choice = "SW";
-    else if (choice == "wn" || choice == "WN" || choice == "NW" || choice == "nw") choice = "NW";
-    else {
-        cout << "Invalid direction entered!\n";
-        sight_range = 6;
-        return;
+    if (chess.getMovementOption() == 1){
+        cout << "Move(NE, SE, SW, NW): ";
+        getline(cin, choice);
+         if (choice == "ne" || choice == "NE" || choice == "EN" || choice == "en") choice = "NE";
+        else if (choice == "es" || choice == "ES" || choice == "se" || choice == "SE") choice = "SE";
+        else if (choice == "sw" || choice == "SW" || choice == "ws" || choice == "WS") choice = "SW";
+        else if (choice == "wn" || choice == "WN" || choice == "NW" || choice == "nw") choice = "NW";
+        else {
+            cout << "Invalid direction entered!\n";
+            sight_range = 6;
+            return;
+        }
+    } else {
+        cout << "Enter a Target Coordinate (e.g B3, P1): ";
+        cin >> choice;
     }
 
     bool move = chess.moveChess_Piece(this, choice, player_number);

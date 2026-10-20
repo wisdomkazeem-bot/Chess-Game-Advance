@@ -9,7 +9,7 @@ class King : public Chess_Piece{
         int sight_range;
 
     public:
-        King() : Chess_Piece(1), sight_range(4) {}
+        King() : Chess_Piece(1), sight_range(3) {}
         void action(int player_number, Chess& chess) override;
         int getSR() const { return sight_range; }
         string getSymbol() const override { return "K"; }

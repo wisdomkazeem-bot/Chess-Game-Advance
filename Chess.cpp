@@ -31,7 +31,17 @@ Chess::~Chess() {
 }
 
 void Chess::displayMap(std::string whiteSquareColor, std::string blackSquareColor) const {
+    std::cout << "   "; // Reference from Gemini
+    for (int j = 0; j < size; ++j) {
+        char colLabel = 'A' + j;
+        std::cout << colLabel << "  "; 
+    }
+    std::cout << "\n";
+
+
     for (int i = 0; i < size; ++i) {
+        int rowLabel = 8 - i; 
+        std::cout << rowLabel << "  ";
         for (int j = 0; j < size; ++j) {
             bool found = false;
             
@@ -58,8 +68,14 @@ void Chess::displayMap(std::string whiteSquareColor, std::string blackSquareColo
                 }
             }
         }
-        std::cout << "\n";
+        std::cout << " " << rowLabel << "\n";;
     }
+    std::cout << "   "; 
+    for (int j = 0; j < size; ++j) {
+        char colLabel = 'A' + j;
+        std::cout << colLabel << "  "; 
+    }
+    std::cout << "\n\n";
 }
 
 //TODO: Uncomment all the code below code once Unit is implemented
@@ -122,6 +138,10 @@ void Chess::placeChess_Piece(Chess_Piece* chess_piece, int playerNumber) {
 }
 
 bool Chess::moveChess_Piece(Chess_Piece* chess_piece, const std::string& direction, int playerNumber) {
+    if (this->getMovementOption() == 2) {
+        return moveChess_Piece_To_Coordinate(chess_piece, direction, playerNumber);
+    }
+
     auto it = chess_piecePositions.find(chess_piece);
     if (it == chess_piecePositions.end() || it->second.second != playerNumber) return false;
 
@@ -160,18 +180,19 @@ bool Chess::moveChess_Piece(Chess_Piece* chess_piece, const std::string& directi
     else { return false; } 
 
     if (newX >= 0 && newX < size && newY >= 0 && newY < size /*&& !isPositionOccupied(newX, newY)*/) {
+        if (chess_piece->getSymbol() == "P" && steps == 2){
+            int startRow = (playerNumber ==  1) ? 6 : 1;
+            if (oldX != startRow){
+                std::cout << "Pawns can only move 2 steps from their starting position!\n";
+                return false;
+            }
+        }
+        
         for (const auto& pair : chess_piecePositions) {
             if (pair.first != chess_piece && pair.second.first.first == newX && pair.second.first.second == newY) {
                 target_piece = pair.first;
                 target_player = pair.second.second;
                 break;
-            }
-        }
-
-        if (chess_piece->getSymbol() == "P" && isDiagonalMove) {
-            if (target_piece == nullptr) {
-                std::cout << "Pawns can only move diagonally to attack an enemy!\n";
-                return false;
             }
         }
         
@@ -180,6 +201,12 @@ bool Chess::moveChess_Piece(Chess_Piece* chess_piece, const std::string& directi
                 std::cout << "Can't move there: Your own piece occupies that square!\n";
                 return false; 
             } else {
+                if (chess_piece->getSymbol() == "P" && isDiagonalMove) {
+                    if (target_piece == nullptr) {
+                        std::cout << "Pawns can only move diagonally to attack an enemy!\n";
+                        return false;
+                    }
+                }
                 clearChess_Piece(chess_piece, target_piece); 
             }
         }
@@ -203,6 +230,138 @@ bool Chess::moveChess_Piece(Chess_Piece* chess_piece, const std::string& directi
         return true;
     }
     return false;
+}
+
+bool Chess::moveChess_Piece_To_Coordinate(Chess_Piece* chess_piece, std::string coord, int playerNumber){
+    auto it = chess_piecePositions.find(chess_piece);
+    if (it == chess_piecePositions.end() || it->second.second != playerNumber) return false;
+
+    auto& pos = it->second.first;
+    int oldX = pos.first; 
+    int oldY = pos.second;
+
+    if (coord.length() != 2) {
+        std::cout << "Invalid coordinate format! Use formats like A3 or E4.\n";
+        return false;
+    }
+
+    char colChar = toupper(coord[0]);
+    char rowChar = coord[1];
+
+    int newY = colChar - 'A';
+    int newX = 8 - (rowChar - '0'); 
+
+    if (newX < 0 || newX >= size || newY < 0 || newY >= size) {
+        std::cout << "Destination out of bounds!\n";
+        return false; 
+    }
+
+    Chess_Piece* target_piece = nullptr;
+    int target_player = 0;
+    for (const auto& pair : chess_piecePositions) {
+        if (pair.first != chess_piece && pair.second.first.first == newX && pair.second.first.second == newY) {
+            target_piece = pair.first;
+            target_player = pair.second.second;
+            break;
+        }
+    }
+
+    std::string symbol = chess_piece->getSymbol();
+
+    int diffX = newX - oldX;
+    int diffY = newY - oldY;
+    int absX = std::abs(diffX);
+    int absY = std::abs(diffY);
+
+    if (symbol == "S") { // Knight (Springer)
+        if (!((absX == 2 && absY == 1) || (absX == 1 && absY == 2))) {
+            std::cout << "Knights can only move in an L-shape!\n";
+            return false;
+        }
+    } 
+    else if (symbol == "P") {
+        int direction = (playerNumber == 1) ? -1 : 1;
+        int startRow = (playerNumber == 1) ? 6 : 1;
+
+        if (diffY == 0) {
+            if (target_piece != nullptr) {
+                std::cout << "Pawns cannot move forward into occupied squares!\n";
+                return false;
+            }
+            if (diffX == direction) {
+            } else if (oldX == startRow && diffX == 2 * direction) {
+                int midX = oldX + direction;
+                for (const auto& pair : chess_piecePositions) {
+                    if (pair.second.first.first == midX && pair.second.first.second == oldY) {
+                        std::cout << "Path is blocked!\n";
+                        return false;
+                    }
+                }
+            } else {
+                std::cout << "Invalid Pawn move distance!\n";
+                return false;
+            }
+        } else if (absY == 1 && diffX == direction) {
+            if (target_piece == nullptr) {
+                std::cout << "Pawns can only move diagonally to capture an opponent!\n";
+                return false;
+            }
+        } else {
+            std::cout << "Invalid Pawn move!\n";
+            return false;
+        }
+    } 
+    else if (symbol == "R" || symbol == "B" || symbol == "Q") {
+        if (symbol == "R" && (diffX != 0 && diffY != 0)) {
+            std::cout << "Rooks can only move horizontally or vertically!\n";
+            return false;
+        }
+        if (symbol == "B" && (absX != absY)) {
+            std::cout << "Bishops can only move diagonally!\n";
+            return false;
+        }
+        if (symbol == "Q" && (diffX != 0 && diffY != 0 && absX != absY)) {
+            std::cout << "Queens can only move in straight lines or diagonals!\n";
+            return false;
+        }
+
+        int stepX = (diffX > 0) ? 1 : ((diffX < 0) ? -1 : 0);
+        int stepY = (diffY > 0) ? 1 : ((diffY < 0) ? -1 : 0);
+
+        int checkX = oldX + stepX;
+        int checkY = oldY + stepY;
+
+        while (checkX != newX || checkY != newY) {
+            for (const auto& pair : chess_piecePositions) {
+                if (pair.second.first.first == checkX && pair.second.first.second == checkY) {
+                    std::cout << "Path is blocked by another piece!\n";
+                    return false;
+                }
+            }
+            checkX += stepX;
+            checkY += stepY;
+        }
+    } 
+    else if (symbol == "K") {
+        if (absX > 1 || absY > 1) {
+            std::cout << "Kings can only move 1 square in any direction!\n";
+            return false;
+        }
+    }
+
+    if (target_piece != nullptr) {
+        if (target_player == playerNumber) {
+            std::cout << "Can't move there: Your own piece occupies that square!\n";
+            return false; 
+        } else {
+            clearChess_Piece(chess_piece, target_piece); 
+        }
+    }
+
+    pos.first = newX;
+    pos.second = newY;
+
+    return true;
 }
 
 void Chess::displayMapWithSight(int playerNumber, int sight, Chess_Piece* chess_piece) const {
@@ -282,45 +441,183 @@ std::string Chess::getNextBoard(Chess_Piece* chess_piece, const std::string& dir
 }
 
 //Reference from Gemini
-bool Chess::isKingDefeated(const std::vector<Chess_Piece*>& activePieces) {
-    bool kingFound = false;
-    
-    for (size_t i = 0; i < activePieces.size(); ++i) {
-        if (activePieces[i] != nullptr) {
-            std::string sym = activePieces[i]->getSymbol();
-            // Checks for both uppercase "K" or lowercase "k" 
+bool Chess::isKingDefeated(int kingPlayerNum) {
+    int kingX = -1, kingY = -1;
+
+    for (const auto& pair : chess_piecePositions) {
+        Chess_Piece* piece = pair.first;
+        int owner = pair.second.second; 
+        
+        if (piece != nullptr && owner == kingPlayerNum) {
+            std::string sym = piece->getSymbol();
             if (sym == "K" || sym == "k") {
-                if (chess_piecePositions.find(activePieces[i]) != chess_piecePositions.end()){
-                    kingFound = true;
+                kingX = pair.second.first.first;  
+                kingY = pair.second.first.second; 
+                break;
+            }
+        }
+    }
+
+      if (kingX == -1 || kingY == -1) {
+        kingX = 4; // Column E
+        kingY = (kingPlayerNum == 1) ? 7 : 0; // Row 1 or 8
+    }
+
+    for (const auto& pair : chess_piecePositions) {
+        Chess_Piece* enemy = pair.first;
+        int owner = pair.second.second;
+
+        if (enemy != nullptr && owner != kingPlayerNum) {
+            int enemyX = pair.second.first.first;
+            int enemyY = pair.second.first.second;
+
+            int diffX = abs(kingX - enemyX);
+            int diffY = abs(kingY - enemyY);
+            std::string sym = enemy->getSymbol();
+
+            bool hasPath = false;
+
+            if ((sym == "R" || sym == "Q") && (enemyX == kingX || enemyY == kingY)) {
+                hasPath = true;
+                int stepX = (kingX == enemyX) ? 0 : ((kingX > enemyX) ? 1 : -1);
+                int stepY = (kingY == enemyY) ? 0 : ((kingY > enemyY) ? 1 : -1);
+                
+                int currX = enemyX + stepX;
+                int currY = enemyY + stepY;
+                
+                while (currX != kingX || currY != kingY) {
+                    for (const auto& checkObstacle : chess_piecePositions) {
+                        if (checkObstacle.second.first.first == currX && checkObstacle.second.first.second == currY) {
+                            hasPath = false;
+                            break;
+                        }
+                    }
+                    if (!hasPath) break;
+                    currX += stepX;
+                    currY += stepY;
+                }
+            }
+
+            else if ((sym == "B" || sym == "Q") && (diffX == diffY)) {
+                hasPath = true;
+                int stepX = (kingX > enemyX) ? 1 : -1;
+                int stepY = (kingY > enemyY) ? 1 : -1;
+                
+                int currX = enemyX + stepX;
+                int currY = enemyY + stepY;
+                
+                while (currX != kingX && currY != kingY) {
+                    for (const auto& checkObstacle : chess_piecePositions) {
+                        if (checkObstacle.second.first.first == currX && checkObstacle.second.first.second == currY) {
+                            hasPath = false;
+                            break;
+                        }
+                    }
+                    if (!hasPath) break;
+                    currX += stepX;
+                    currY += stepY;
+                }
+            }
+
+            else if ((sym == "N" || sym == "n" || sym == "S" || sym == "s") && (diffX * diffY == 2)) {
+                hasPath = true;
+            }
+
+            else if ((sym == "K" || sym == "k") && (diffX <= 1 && diffY <= 1)) {
+                hasPath = true;
+            }
+
+            else if (sym == "P") {
+                int dir = (owner == 1) ? -1 : 1; 
+                if (kingY - enemyY == dir && diffX == 1) {
+                    hasPath = true;
+                }
+            }
+
+            if (hasPath) return true;
+        }
+    }
+    return false;
+}
+
+//Reference from Gemini
+bool Chess::checkWinCondition(int kingPlayerNum) {
+        if (!isKingDefeated(kingPlayerNum)) {
+        return false;
+    }
+
+    int kingX = -1, kingY = -1;
+
+    for (const auto& pair : chess_piecePositions) {
+        Chess_Piece* piece = pair.first;
+        int owner = pair.second.second; 
+        if (piece != nullptr && owner == kingPlayerNum && (piece->getSymbol() == "K" || piece->getSymbol() == "k")) {
+            kingX = pair.second.first.first;  
+            kingY = pair.second.first.second; 
+            break;
+        }
+    }
+
+    if (kingX == -1 || kingY == -1) return false;
+
+    int dx[] = {-1, -1, -1,  0, 0,  1, 1, 1};
+    int dy[] = {-1,  0,  1, -1, 1, -1, 0, 1};
+
+    for (int i = 0; i < 8; ++i) {
+        int targetX = kingX + dx[i];
+        int targetY = kingY + dy[i];
+
+        if (targetX >= 0 && targetX < 8 && targetY >= 0 && targetY < 8) {
+            bool friendlyFire = false;
+            Chess_Piece* pieceAtTarget = nullptr;
+            for (const auto& p : chess_piecePositions) {
+                if (p.second.first.first == targetX && p.second.first.second == targetY) {
+                    if (p.second.second == kingPlayerNum) friendlyFire = true;
+                    else pieceAtTarget = p.first;
+                    break;
+                }
+            }
+            
+            if (friendlyFire) continue;
+            
+            for (auto& pair : chess_piecePositions) {
+                Chess_Piece* piece = pair.first;
+                if (piece != nullptr && pair.second.second == kingPlayerNum && (piece->getSymbol() == "K" || piece->getSymbol() == "k")) {
+                    
+                    pair.second.first.first = targetX;
+                    pair.second.first.second = targetY;
+                    if (pieceAtTarget != nullptr) chess_piecePositions.erase(pieceAtTarget);
+
+                    bool stillInCheck = isKingDefeated(kingPlayerNum);
+
+                    pair.second.first.first = kingX;
+                    pair.second.first.second = kingY;
+                    if (pieceAtTarget != nullptr) {
+                        chess_piecePositions[pieceAtTarget] = std::make_pair(std::make_pair(targetX, targetY), (kingPlayerNum == 1 ? 2 : 1));
+                    }
+
+                    if (!stillInCheck) {
+                        return false; 
+                    }
                     break;
                 }
             }
         }
     }
 
-    return !kingFound; 
-}
-
-//Reference from Gemini
-bool Chess::checkWinCondition() {
-    int playerOneKings = 0;
-    int playerTwoKings = 0;
-
     for (const auto& pair : chess_piecePositions) {
-        Chess_Piece* piece = pair.first;
-        int owner = pair.second.second;
-        
-        if (piece != nullptr && (piece->getSymbol() == "K" || piece->getSymbol() == "k")) {
-            if (owner == 1) playerOneKings++;
-            if (owner == 2) playerTwoKings++;
+        Chess_Piece* attacker = pair.first;
+        if (attacker != nullptr && pair.second.second != kingPlayerNum) {
+            std::string sym = attacker->getSymbol();
+            int atkX = pair.second.first.first;
+            int atkY = pair.second.first.second;
+            if ((sym == "Q" || sym == "R" || sym == "B") && abs(kingX - atkX) <= 1 && abs(kingY - atkY) <= 1) {
+                return true; 
+           }
         }
     }
 
-    // Return true if either king is dead so your outer statement fires
-    if (playerOneKings == 0 || playerTwoKings == 0) {
-        return true;
-    }
-    return false;
+    return true; 
 }
 
 int Chess::timePlayer(int playerNumber, int maxTime, bool isTime){
